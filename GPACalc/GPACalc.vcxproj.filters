@@ -21,12 +21,24 @@
     <ClCompile Include="src\calcframe.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\entry.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\impframe.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\main.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="include\calcframe.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\entry.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\impframe.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

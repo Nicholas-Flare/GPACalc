@@ -113,6 +113,8 @@ void CalcFrame::BindElements()
 	Bind(wxEVT_BUTTON, &CalcFrame::CbButtonImport, this, wxID_BTN_IMPORT);
 	Bind(wxEVT_BUTTON, &CalcFrame::CbButtonDelete, this, wxID_BTN_DEL);
 	Bind(wxEVT_LIST_ITEM_FOCUSED, &CalcFrame::CbOnFocus, this, wxID_ANY);
+	Bind(wxEVT_MENU, &CalcFrame::CbAbout, this, wxID_M_ABOUT);
+	Bind(wxEVT_MENU, &CalcFrame::CbLicense, this, wxID_M_LICENSE);
 
 }
 
@@ -524,6 +526,33 @@ void CalcFrame::CbSaveFile(wxCommandEvent& e)
 	fs::path ps = fs::path(sv_dialog.GetPath().ToStdWstring());
 	int res = Save(ps);
 	return;
+
+}
+
+void CalcFrame::CbLicense(wxCommandEvent& e)
+{
+
+	wxAboutDialogInfo aboutInfo;
+	aboutInfo.SetName("GPACalc");
+	aboutInfo.SetVersion("2.0.1");
+	aboutInfo.SetDescription(wxT("This application uses WxWidgets.\nVisit https://wxwidgets.org/about/licence/ below to see License.\n"
+	"This application uses SQLite. SQLite is in the Public Domain.\nVisit https://sqlite.org/copyright.html below to learn more."));
+
+	wxAboutBox(aboutInfo);
+}
+
+void CalcFrame::CbAbout(wxCommandEvent& e)
+{
+
+	wxAboutDialogInfo aboutInfo;
+	aboutInfo.SetName("GPACalc");
+	aboutInfo.SetVersion("2.0.1");
+	aboutInfo.SetDescription(_("A simple WxWidgets-based calculator developed with NEU GPA system in mind :D\nGPA calculated based on announcement below."));
+	aboutInfo.SetCopyright("2024 (C)");
+	aboutInfo.SetWebSite("http://aao.neu.edu.cn/2019/0318/c2340a86970/pagem.htm");
+	aboutInfo.AddDeveloper("@Nicholas-Flare");
+
+	wxAboutBox(aboutInfo);
 
 }
 

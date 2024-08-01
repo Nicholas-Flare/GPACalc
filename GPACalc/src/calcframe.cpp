@@ -115,6 +115,7 @@ void CalcFrame::BindElements()
 	Bind(wxEVT_LIST_ITEM_FOCUSED, &CalcFrame::CbOnFocus, this, wxID_ANY);
 	Bind(wxEVT_MENU, &CalcFrame::CbAbout, this, wxID_M_ABOUT);
 	Bind(wxEVT_MENU, &CalcFrame::CbLicense, this, wxID_M_LICENSE);
+	Bind(wxEVT_MENU, &CalcFrame::CbSearchEntry, this, wxID_M_SEARCH);
 
 }
 
@@ -175,7 +176,7 @@ bool CalcFrame::CreateNew()
 
 }
 
-bool CalcFrame::Load(fs::path p)
+bool CalcFrame::Load(const fs::path p)
 {
 	if (!fs::exists(p)) return false;
 	DisableElements();
@@ -195,7 +196,7 @@ bool CalcFrame::Load(fs::path p)
 	
 }
 
-bool CalcFrame::Save(fs::path p)
+bool CalcFrame::Save(const fs::path p)
 {
 	if (!(this->p.empty())) return true;
 	
@@ -297,7 +298,7 @@ bool CalcFrame::Close()
 	return false;
 }
 
-bool CalcFrame::PushEntry(Entry* e)
+bool CalcFrame::PushEntry(const Entry e)
 {
 	if (!IsMinimumAvailable(e)) return false;
 
@@ -310,28 +311,28 @@ bool CalcFrame::PushEntry(Entry* e)
 		return false;
 	}
 
-	res = sqlite3_bind_text64(stm, 1, e->sems.ToUTF8(), -1, SQLITE_STATIC, SQLITE_UTF8);
+	res = sqlite3_bind_text64(stm, 1, e.sems.ToUTF8(), -1, SQLITE_STATIC, SQLITE_UTF8);
 	if (res != SQLITE_OK) {
 		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"semester\".\n Error code = %04x", res));
 		sqlite3_finalize(stm);
 		return false;
 	}
 
-	res = sqlite3_bind_text64(stm, 2, e->cls.ToUTF8(), -1, SQLITE_STATIC, SQLITE_UTF8);
+	res = sqlite3_bind_text64(stm, 2, e.cls.ToUTF8(), -1, SQLITE_STATIC, SQLITE_UTF8);
 	if (res != SQLITE_OK) {
 		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"class\".\n Error code = %04x", res));
 		sqlite3_finalize(stm);
 		return false;
 	}
 
-	res = sqlite3_bind_double(stm, 3, e->weight);
+	res = sqlite3_bind_double(stm, 3, e.weight);
 	if (res != SQLITE_OK) {
 		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"weight\".\n Error code = %04x", res));
 		sqlite3_finalize(stm);
 		return false;
 	}
 
-	res = sqlite3_bind_double(stm, 4, e->score);
+	res = sqlite3_bind_double(stm, 4, e.score);
 	if (res != SQLITE_OK) {
 		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"score\".\n Error code = %04x", res));
 		sqlite3_finalize(stm);
@@ -388,7 +389,115 @@ std::vector<Entry*> CalcFrame::RetrieveAllEntries()
 
 }
 
+bool CalcFrame::DropEntry(const Entry e)
+{
+	// This function always assume Entry exists. Should only be called internally.
 
+	sqlite3_stmt* stm;
+	wxString sql_add_entry("DELETE FROM entries WHERE semester==? AND class==? AND weight==? AND score==?");
+	int res = sqlite3_prepare_v2(pdb, sql_add_entry.ToUTF8(), -1, &stm, NULL);
+	if (res != SQLITE_OK) {
+		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement.\n Error code = %04x", res));
+		sqlite3_finalize(stm);
+		return false;
+	}
+
+	res = sqlite3_bind_text64(stm, 1, e.sems.ToUTF8(), -1, SQLITE_STATIC, SQLITE_UTF8);
+	if (res != SQLITE_OK) {
+		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"semester\".\n Error code = %04x", res));
+		sqlite3_finalize(stm);
+		return false;
+	}
+
+	res = sqlite3_bind_text64(stm, 2, e.cls.ToUTF8(), -1, SQLITE_STATIC, SQLITE_UTF8);
+	if (res != SQLITE_OK) {
+		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"class\".\n Error code = %04x", res));
+		sqlite3_finalize(stm);
+		return false;
+	}
+	
+	res = sqlite3_bind_double(stm, 3, e.weight);
+	if (res != SQLITE_OK) {
+		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"weight\".\n Error code = %04x", res));
+		sqlite3_finalize(stm);
+		return false;
+	}
+	
+	res = sqlite3_bind_double(stm, 4, e.score);
+	if (res != SQLITE_OK) {
+		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"score\".\n Error code = %04x", res));
+		sqlite3_finalize(stm);
+		return false;
+	}
+
+	res = sqlite3_step(stm);
+	if (res != SQLITE_DONE) {
+		wxLogError(wxString::Format("Error occurs while trying to execute a SQLite Statement.\n Error code = %04x", res));
+		sqlite3_finalize(stm);
+		return false;
+	}
+
+	sqlite3_finalize(stm);
+	return true;
+}
+
+
+
+bool CalcFrame::DropEntryByIndex(int index)
+{
+
+	sqlite3_stmt* stm_all = nullptr;
+	wxString sql_all("SELECT rowid FROM entries LIMIT ?,1");
+	int res = sqlite3_prepare_v2(pdb, sql_all.ToUTF8(), -1, &stm_all, nullptr);
+	if (res != SQLITE_OK) {
+		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement.\n Error code = %04x", res));
+		sqlite3_finalize(stm_all);
+		return false;
+	}
+
+	res = sqlite3_bind_int(stm_all, 1, index);
+	if (res != SQLITE_OK) {
+		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"index\".\n Error code = %04x", res));
+		sqlite3_finalize(stm_all);
+		return false;
+	}
+
+	res = sqlite3_step(stm_all);
+	if (res != SQLITE_ROW and res != SQLITE_DONE) {
+		wxLogError(wxString::Format("Error occurs while trying to execute a SQLite Statement.\n Error code = %04x", res));
+		sqlite3_finalize(stm_all);
+		return false;
+	}
+
+	int rid = sqlite3_column_int(stm_all, 0);
+	sqlite3_finalize(stm_all);
+
+	sqlite3_stmt* stm = nullptr;
+	wxString sql_add_entry("DELETE FROM entries WHERE rowid==?");
+	res = sqlite3_prepare_v2(pdb, sql_add_entry.ToUTF8(), -1, &stm, NULL);
+	if (res != SQLITE_OK) {
+		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement.\n Error code = %04x", res));
+		sqlite3_finalize(stm);
+		return false;
+	}
+
+	res = sqlite3_bind_int(stm, 1, rid);
+	if (res != SQLITE_OK) {
+		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"rowid\".\n Error code = %04x", res));
+		sqlite3_finalize(stm);
+		return false;
+	}
+
+	res = sqlite3_step(stm);
+	if (res != SQLITE_DONE) {
+		wxLogError(wxString::Format("Error occurs while trying to execute a SQLite Statement.\n Error code = %04x", res));
+		sqlite3_finalize(stm);
+		return false;
+	}
+
+	sqlite3_finalize(stm);
+	return true;
+}
 
 double CalcFrame::GetGPA()
 {
@@ -529,6 +638,19 @@ void CalcFrame::CbSaveFile(wxCommandEvent& e)
 
 }
 
+void CalcFrame::CbSearchEntry(wxCommandEvent& e)
+{
+
+	if (!is_ready) return;
+
+	wxMessageDialog dlg(this,
+		wxT("Bah, yet to be implemented."),
+		wxT("Coming soon..."),
+		wxOK);
+	dlg.ShowModal();
+
+}
+
 void CalcFrame::CbLicense(wxCommandEvent& e)
 {
 
@@ -564,9 +686,12 @@ void CalcFrame::CbButtonAdd(wxCommandEvent& e)
 	double w = 0.f, s = 0.f;
 	w = tc_weight->GetValue();
 	tc_score->GetValue().ToDouble(&s);
+
+	if (s < 0) return;
+
 	Entry* tmp = CreateManualEntry(w, s);
 
-	if (!PushEntry(tmp)) return;
+	if (!PushEntry(*tmp)) return;
 
 	int cur = ls->GetItemCount();
 	ls->InsertItem(cur, tmp->sems);
@@ -597,7 +722,7 @@ void CalcFrame::CbButtonImport(wxCommandEvent& e)
 
 	for (auto tmp : a) {
 
-		PushEntry(tmp);
+		PushEntry(*tmp);
 
 		int cur = ls->GetItemCount();
 		ls->InsertItem(cur, tmp->sems);
@@ -620,51 +745,7 @@ void CalcFrame::CbButtonDelete(wxCommandEvent& e)
 
 	if (sel < 0) return;
 
-	sqlite3_stmt* stm;
-	wxString sql_add_entry("DELETE FROM entries WHERE semester==? AND class==? AND weight==? AND score==?");
-	int res = sqlite3_prepare_v2(pdb, sql_add_entry.ToUTF8(), -1, &stm, NULL);
-	if (res != SQLITE_OK) {
-		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement.\n Error code = %04x", res));
-		sqlite3_finalize(stm);
-		return;
-	}
-
-	res = sqlite3_bind_text64(stm, 1, ls->GetItemText(sel,0).ToUTF8(), -1, SQLITE_STATIC, SQLITE_UTF8);
-	if (res != SQLITE_OK) {
-		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"semester\".\n Error code = %04x", res));
-		sqlite3_finalize(stm);
-		return;
-	}
-
-	res = sqlite3_bind_text64(stm, 2, ls->GetItemText(sel, 1).ToUTF8(), -1, SQLITE_STATIC, SQLITE_UTF8);
-	if (res != SQLITE_OK) {
-		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"class\".\n Error code = %04x", res));
-		sqlite3_finalize(stm);
-		return;
-	}
-
-	double w = 0.0f;
-	ls->GetItemText(sel, 2).ToDouble(&w);
-	res = sqlite3_bind_double(stm, 3, w);
-	if (res != SQLITE_OK) {
-		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"weight\".\n Error code = %04x", res));
-		sqlite3_finalize(stm);
-		return;
-	}
-
-	double s = 0.0f;
-	ls->GetItemText(sel, 3).ToDouble(&s);
-	res = sqlite3_bind_double(stm, 4, s);
-	if (res != SQLITE_OK) {
-		wxLogError(wxString::Format("Error occurs while trying to prepare a SQLite Statement while binding \"score\".\n Error code = %04x", res));
-		sqlite3_finalize(stm);
-		return;
-	}
-
-	res = sqlite3_step(stm);
-	if (res != SQLITE_DONE) {
-		wxLogError(wxString::Format("Error occurs while trying to execute a SQLite Statement.\n Error code = %04x", res));
-		sqlite3_finalize(stm);
+	if (!DropEntryByIndex(sel)) {
 		return;
 	}
 
@@ -678,7 +759,7 @@ void CalcFrame::CbButtonDelete(wxCommandEvent& e)
 void CalcFrame::CbOnClose(wxCloseEvent& e)
 {
 
-	wxMessageDialog* dlg = new wxMessageDialog(this, "Really Close?", "Not so fast!", wxYES_NO | wxNO_DEFAULT);
+	wxMessageDialog* dlg = new wxMessageDialog(this, "Really close GPACalc? Any unsaved data will be lost!", "Save Before Exit?", wxYES_NO | wxNO_DEFAULT);
 	int choice = dlg->ShowModal();
 
 	if (choice == wxID_YES) {

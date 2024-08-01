@@ -68,14 +68,14 @@ private:
 	/// </summary>
 	/// <param name="p">Path to the file.</param>
 	/// <return>Whether the operation is successful.</return>
-	bool Load(fs::path p);
+	bool Load(const fs::path p);
 
 	/// <summary>
 	/// Save a file to storage,
 	/// </summary>
 	/// <param name="p">Path to the location.</param>
 	/// <return>Whether the operation is successful.</return>
-	bool Save(fs::path p);
+	bool Save(const fs::path p);
 
 	/// <summary>
 	/// Verify whether the current database is a datasheet.
@@ -94,7 +94,7 @@ private:
 	/// </summary>
 	/// <param name="e">Entry structure to be added.</param>
 	/// <return>Whether the operation is successful.</return>
-	bool PushEntry(Entry* e);
+	bool PushEntry(const Entry e);
 
 	/// <summary>
 	/// Retrieve all entries from the database.
@@ -103,18 +103,18 @@ private:
 	std::vector<Entry*> RetrieveAllEntries();
 
 	/// <summary>
-	/// Drop an entry according to its index.
+	/// Drop an entry.
 	/// </summary>
-	/// <param name="idx">Index for the entry.</param>
+	/// <param name="e">The Entry to be dropped.</param>
 	/// <return>Whether the operation is successful.</return>
-	bool DropEntryByIndex(long idx);
+	bool DropEntry(const Entry e);
 
 	/// <summary>
-	/// Drop an entry according to its class name (Include mode).
+	/// Drop an entry according to its index.
 	/// </summary>
-	/// <param name="c">Query String</param>
-	/// <returns>Retrieved entry.</returns>
-	bool DropEntryByClassName(wxString c);
+	/// <param name="e">The index of the entry to be dropped.</param>
+	/// <return>Whether the operation is successful.</return>
+	bool DropEntryByIndex(int index);
 
 	/// <summary>
 	/// Return the calculated GPA (Weighted Average). 

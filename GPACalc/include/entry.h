@@ -9,4 +9,4 @@ struct Entry {
 };
 
 Entry* CreateManualEntry(double w, double s);
-bool IsMinimumAvailable(Entry* e);
+bool IsMinimumAvailable(Entry e);
